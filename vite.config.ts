@@ -7,6 +7,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/wish-you-were-here-v4/',
   plugins: [
     vue(),
     vueJsx(),

@@ -5,23 +5,12 @@
       <form @submit.prevent="submitForm">
         <div class="form-group">
           <label for="phone">Phone Number:</label>
-          <VueTelInput
+          <input
+            type="tel"
+            id="phone"
             v-model="phoneNumber"
-            :preferred-countries="['us', 'gb', 'ca', 'au', 'nz', 'in']"
-            defaultCountry="US"
-            mode="national"
             class="phone-input"
-            :dropdown-options="{
-              showDialCodeInList: true,
-              showDialCodeInSelection: true,
-              showFlags: true,
-              showSearchBox: true
-            }"
-            :input-options="{
-              showDialCode: false,
-              placeholder: 'Enter phone number'
-            }"
-            @validate="onValidate"
+            placeholder="(123) 456-7890"
             required
           />
           <small>We'll text you!</small>
@@ -64,7 +53,6 @@ const phoneNumber = ref('');
 const instagramHandle = ref('');
 const message = ref('');
 const isSuccess = ref(false);
-const selectedCountry = ref('US');
 
 const getCountryCode = (countryCode) => {
   // Map of country codes to their respective country codes
@@ -79,10 +67,15 @@ const getCountryCode = (countryCode) => {
   return countryCodeMap[countryCode] || '1'; // Default to US/Canada code if not found
 };
 
-const onValidate = (phone, validation = {}) => {
-  const { country } = validation;
-  if (country && country.iso2) {
-    selectedCountry.value = country.iso2;
+const onPhoneInput = (event) => {
+  // Basic phone number formatting
+  const input = event.target.value.replace(/\D/g, '');
+  const match = input.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+  
+  if (match) {
+    phoneNumber.value = !match[2] 
+      ? match[1] 
+      : `(${match[1]}) ${match[2]}${match[3] ? `-${match[3]}` : ''}`;
   }
 };
 
@@ -92,7 +85,13 @@ const resetForm = () => {
 };
 
 const submitForm = async () => {
+  console.log('Form submitted with values:', {
+    phoneNumber: phoneNumber.value,
+    instagramHandle: instagramHandle.value
+  });
+
   if (!phoneNumber.value || !instagramHandle.value.trim()) {
+    console.log('Validation failed - missing fields');
     message.value = 'Please fill in all fields';
     isSuccess.value = false;
     return;
@@ -100,37 +99,30 @@ const submitForm = async () => {
 
   // Remove all non-digit characters from the phone number
   const rawPhoneNumber = phoneNumber.value.replace(/[^0-9]/g, '');
+  console.log('Raw phone number:', rawPhoneNumber);
   
-  // Check if the phone number is at least 10 digits (US number without country code)
+  // Check if the phone number is at least 10 digits
   if (rawPhoneNumber.length < 10) {
+    console.log('Validation failed - phone number too short');
     message.value = 'Please enter a valid 10-digit phone number';
     isSuccess.value = false;
     return;
   }
 
-  // Format the phone number with country code
-  let formattedPhoneNumber;
+  // Format the phone number with US country code by default
+  const formattedPhoneNumber = rawPhoneNumber.length === 10 
+    ? `+1${rawPhoneNumber}` 
+    : `+${rawPhoneNumber}`;
   
-  // If the number starts with a country code (e.g., 1 for US/Canada), use as is
-  if (rawPhoneNumber.length === 11 && rawPhoneNumber.startsWith('1')) {
-    formattedPhoneNumber = `+${rawPhoneNumber}`;
-  } 
-  // If it's a 10-digit number, assume it's a US number and add +1
-  else if (rawPhoneNumber.length === 10) {
-    formattedPhoneNumber = `+1${rawPhoneNumber}`;
-  }
-  // For other cases, use the country code from the selected country
-  else {
-    const countryCode = getCountryCode(selectedCountry.value);
-    formattedPhoneNumber = `+${countryCode}${rawPhoneNumber}`;
-  }
+  console.log('Formatted phone number:', formattedPhoneNumber);
 
   // Clean up Instagram handle (remove @ if included)
   const cleanInstagramHandle = instagramHandle.value.replace(/^@/, '');
+  console.log('Cleaned Instagram handle:', cleanInstagramHandle);
 
   try {
     const { data, error } = await supabase
-      .from('waitlist')
+      .from('signups')
       .insert([
         { 
           phone_number: formattedPhoneNumber,
@@ -169,8 +161,19 @@ defineOptions({
   <style scoped>
   .phone-input {
     width: 100%;
-    margin-bottom: 1rem;
+    padding: 10px;
+    margin-bottom: 0; /* Removed margin to match Instagram input */
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 16px;
     box-sizing: border-box;
+  }
+  
+  .form-group small {
+    display: block;
+    margin-bottom: 1rem;
+    color: #666;
+    font-size: 0.8rem;
   }
 
   .vue-tel-input {

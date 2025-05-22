@@ -56,7 +56,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { supabase } from '../supabase';
-import VueTelInput from 'vue3-tel-input';
+import { VueTelInput } from 'vue3-tel-input';
 import 'vue3-tel-input/dist/vue3-tel-input.css';
 
 const router = useRouter();
@@ -268,8 +268,9 @@ defineOptions({
 
   .signup-container {
     max-width: 500px;
+    width: 90%;
     margin: 20px auto 40px;
-    padding: 30px 25px;
+    padding: 25px 20px;
     border: 1px solid #eee;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -277,6 +278,7 @@ defineOptions({
     min-height: auto;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
   }
   
   h2 {
@@ -288,9 +290,14 @@ defineOptions({
   .subheader {
     text-align: center;
     color: #666;
-    margin-bottom: 25px;
-    font-size: 0.95em;
-    white-space: nowrap;
+    margin: 0 auto 25px;
+    padding: 0 10px;
+    font-size: clamp(0.8em, 4vw, 1em);
+    line-height: 1.4;
+    white-space: normal;
+    word-wrap: break-word;
+    box-sizing: border-box;
+    width: 100%;
   }
   
   .form-group {

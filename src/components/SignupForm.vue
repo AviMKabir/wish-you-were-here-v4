@@ -268,9 +268,9 @@ defineOptions({
 
   .signup-container {
     max-width: 500px;
-    width: 90%;
+    width: 95%;
     margin: 20px auto 40px;
-    padding: 25px 20px;
+    padding: 25px 15px;
     border: 1px solid #eee;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -279,6 +279,13 @@ defineOptions({
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
+  }
+  
+  @media (max-width: 480px) {
+    .signup-container {
+      width: 92%;
+      padding: 20px 12px;
+    }
   }
   
   h2 {

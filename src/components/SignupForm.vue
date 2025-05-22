@@ -44,162 +44,127 @@
         <p v-if="message" :class="{ 'success-message': isSuccess, 'error-message': !isSuccess }">
           {{ message }}
         </p>
+        
+        <div class="admin-link">
+          <a href="#/admin" @click.prevent="router.push('/admin')">Admin</a>
+        </div>
       </form>
     </div>
   </template>
   
-  <script>
-  import { VueTelInput } from 'vue3-tel-input';
-  import 'vue3-tel-input/dist/vue3-tel-input.css';
-  import { supabase } from '../supabase'
+<script setup>
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { supabase } from '../supabase';
+import VueTelInput from 'vue3-tel-input';
+import 'vue3-tel-input/dist/vue3-tel-input.css';
 
-export default {
-    name: 'SignupForm',
-    components: { VueTelInput },
-    data() {
-      return {
-        phoneNumber: '',
-        instagramHandle: '',
-        message: '',
-        isSuccess: false,
-        selectedCountry: 'US',
-        formattedPhone: ''
-      };
-    },
-    methods: {
-      getCountryCode(countryCode) {
-        // Add more country codes as needed
-        const countryCodes = {
-          'us': '1',
-          'gb': '44',
-          'ca': '1',
-          'au': '61',
-          'nz': '64',
-          'in': '91'
-        };
-        return countryCodes[countryCode.toLowerCase()] || '1'; // Default to US
-      },
-      
-      onValidate(phone, validation = {}) {
-        const { country } = validation;
-        if (country && country.iso2) {
-          this.selectedCountry = country.iso2;
-        } else if (!this.selectedCountry) {
-          this.selectedCountry = 'US'; // Default to US if no country is selected
-        }
-        
-        // Handle case where phone might be an object
-        const phoneStr = phone && typeof phone === 'object' 
-          ? (phone.number || phone.nationalNumber || '') 
-          : String(phone || '');
-          
-        this.formattedPhone = phoneStr ? phoneStr.replace(/[^0-9+]/g, '') : '';
-      },
-      async submitForm() {
-        console.log('Form submitted with values:', {
-          phoneNumber: this.phoneNumber,
-          instagramHandle: this.instagramHandle,
-          selectedCountry: this.selectedCountry,
-          formattedPhone: this.formattedPhone
-        });
+const router = useRouter();
+const phoneNumber = ref('');
+const instagramHandle = ref('');
+const message = ref('');
+const isSuccess = ref(false);
+const selectedCountry = ref('US');
 
-        // Basic validation
-        if (!this.instagramHandle || !this.instagramHandle.trim()) {
-          this.message = 'Please enter your Instagram handle';
-          this.isSuccess = false;
-          console.log('Validation failed - missing Instagram handle');
-          return;
-        }
-        
-        const instagramHandle = this.instagramHandle.trim();
-        
-        // Get the raw phone number from the formatted phone or directly from input
-        let rawPhoneNumber = '';
-        if (this.formattedPhone) {
-          rawPhoneNumber = this.formattedPhone.replace(/[^0-9]/g, '');
-        } else if (this.phoneNumber && typeof this.phoneNumber === 'object') {
-          // Handle case where phoneNumber is an object (from vue-tel-input)
-          const num = this.phoneNumber.number || this.phoneNumber.nationalNumber || '';
-          rawPhoneNumber = num.replace(/[^0-9]/g, '');
-        } else if (typeof this.phoneNumber === 'string') {
-          rawPhoneNumber = this.phoneNumber.replace(/[^0-9]/g, '');
-        }
-        
-        console.log('Raw phone number:', rawPhoneNumber);
-        
-        if (rawPhoneNumber.length < 10) {
-          this.message = 'Please enter a valid 10-digit phone number';
-          this.isSuccess = false;
-          console.log('Validation failed - invalid phone number');
-          return;
-        }
-
-        try {
-          // Format Instagram handle if it doesn't start with @
-          const formattedInstagramHandle = instagramHandle.startsWith('@') 
-            ? instagramHandle 
-            : `@${instagramHandle}`;
-
-          // Format phone number with country code if not already included
-          let phoneNumber = rawPhoneNumber;
-          const countryCode = this.getCountryCode(this.selectedCountry);
-          
-          // Remove any existing country code to prevent duplication
-          if (phoneNumber.startsWith(countryCode)) {
-            phoneNumber = phoneNumber.substring(countryCode.length);
-          } else if (phoneNumber.startsWith(`1${countryCode}`)) {
-            // Handle case where US/Canada might have an extra 1
-            phoneNumber = phoneNumber.substring(countryCode.length + 1);
-          }
-          
-          // Add the country code
-          phoneNumber = `+${countryCode}${phoneNumber}`;
-          
-          console.log('Submitting with:', {
-            phoneNumber,
-            instagramHandle: formattedInstagramHandle,
-            countryCode: this.selectedCountry
-          });
-
-          const { data, error } = await supabase
-            .from('signups')
-            .insert([
-              {
-                phone_number: phoneNumber,
-                instagram_handle: formattedInstagramHandle,
-                created_at: new Date().toISOString()
-              }
-            ])
-            .select();
-
-          console.log('Supabase response:', { data, error });
-
-          if (error) {
-            console.error('Supabase error:', error);
-            throw error;
-          }
-
-          this.message = 'Thank you for signing up!';
-          this.isSuccess = true;
-          this.resetForm();
-        } catch (error) {
-          console.error('Error in form submission:', error);
-          this.message = error.message || 'An error occurred. Please try again.';
-          this.isSuccess = false;
-        }
-      },
-      resetForm() {
-        this.phoneNumber = '';
-        this.instagramHandle = '';
-  
-        // Optionally clear message after a few seconds
-        setTimeout(() => {
-          this.message = '';
-        }, 3000);
-      },
-    },
+const getCountryCode = (countryCode) => {
+  // Map of country codes to their respective country codes
+  const countryCodeMap = {
+    'US': '1',
+    'GB': '44',
+    'CA': '1',
+    'AU': '61',
+    'NZ': '64',
+    'IN': '91',
   };
-  </script>
+  return countryCodeMap[countryCode] || '1'; // Default to US/Canada code if not found
+};
+
+const onValidate = (phone, validation = {}) => {
+  const { country } = validation;
+  if (country && country.iso2) {
+    selectedCountry.value = country.iso2;
+  }
+};
+
+const resetForm = () => {
+  phoneNumber.value = '';
+  instagramHandle.value = '';
+};
+
+const submitForm = async () => {
+  if (!phoneNumber.value || !instagramHandle.value.trim()) {
+    message.value = 'Please fill in all fields';
+    isSuccess.value = false;
+    return;
+  }
+
+  // Remove all non-digit characters from the phone number
+  const rawPhoneNumber = phoneNumber.value.replace(/[^0-9]/g, '');
+  
+  // Check if the phone number is at least 10 digits (US number without country code)
+  if (rawPhoneNumber.length < 10) {
+    message.value = 'Please enter a valid 10-digit phone number';
+    isSuccess.value = false;
+    return;
+  }
+
+  // Format the phone number with country code
+  let formattedPhoneNumber;
+  
+  // If the number starts with a country code (e.g., 1 for US/Canada), use as is
+  if (rawPhoneNumber.length === 11 && rawPhoneNumber.startsWith('1')) {
+    formattedPhoneNumber = `+${rawPhoneNumber}`;
+  } 
+  // If it's a 10-digit number, assume it's a US number and add +1
+  else if (rawPhoneNumber.length === 10) {
+    formattedPhoneNumber = `+1${rawPhoneNumber}`;
+  }
+  // For other cases, use the country code from the selected country
+  else {
+    const countryCode = getCountryCode(selectedCountry.value);
+    formattedPhoneNumber = `+${countryCode}${rawPhoneNumber}`;
+  }
+
+  // Clean up Instagram handle (remove @ if included)
+  const cleanInstagramHandle = instagramHandle.value.replace(/^@/, '');
+
+  try {
+    const { data, error } = await supabase
+      .from('waitlist')
+      .insert([
+        { 
+          phone_number: formattedPhoneNumber,
+          instagram_handle: cleanInstagramHandle ? `@${cleanInstagramHandle}` : null
+        },
+      ])
+      .select();
+
+    if (error) {
+      console.error('Error inserting data:', error);
+      message.value = 'Error submitting form. Please try again.';
+      isSuccess.value = false;
+      return;
+    }
+
+    // Success!
+    console.log('Data inserted successfully:', data);
+    message.value = 'Thanks for signing up! We\'ll be in touch soon.';
+    isSuccess.value = true;
+    
+    // Reset form after successful submission
+    resetForm();
+    
+  } catch (error) {
+    console.error('Error:', error);
+    message.value = 'An unexpected error occurred. Please try again.';
+    isSuccess.value = false;
+  }
+};
+
+defineOptions({
+  name: 'SignupForm',
+});
+</script>
   
   <style scoped>
   .phone-input {
@@ -386,8 +351,24 @@ export default {
   }
   
   .error-message {
-    color: red;
+    color: #ff4444;
+    margin-top: 10px;
+  }
+  
+  .admin-link {
+    margin-top: 20px;
     text-align: center;
-    margin-top: 15px;
+  }
+  
+  .admin-link a {
+    color: #666;
+    text-decoration: none;
+    font-size: 0.9em;
+    transition: color 0.2s;
+  }
+  
+  .admin-link a:hover {
+    color: #333;
+    text-decoration: underline;
   }
   </style>

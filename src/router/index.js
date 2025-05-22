@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router';
 import SignupForm from '../components/SignupForm.vue';
 import AdminDashboard from '../components/AdminDashboard.vue';
 
@@ -21,11 +21,16 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory('/wish-you-were-here-v4/'),
+  // Use hash mode for GitHub Pages compatibility
+  history: createWebHashHistory(),
   routes,
   scrollBehavior(to, from, savedPosition) {
     // Always scroll to top when navigating
-    return { top: 0 };
+    if (savedPosition) {
+      return savedPosition;
+    } else {
+      return { top: 0 };
+    }
   }
 });
 

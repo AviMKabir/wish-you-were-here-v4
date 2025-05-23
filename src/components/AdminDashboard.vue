@@ -19,32 +19,110 @@
     </div>
 
     <div v-else class="dashboard-content">
-      <button @click="logout" class="logout-button">Logout</button>
+      <div class="dashboard-header">
+        <button @click="logout" class="logout-button">Logout</button>
+        
+        <div class="filters">
+          <div class="filter-group">
+            <label>Filter by Date:</label>
+            <input 
+              type="date" 
+              v-model="filters.selectedDate" 
+              class="filter-input"
+              @change="applyFilters"
+            >
+          </div>
+          
+          <div class="filter-group">
+            <label>Filter by Time:</label>
+            <select v-model="filters.selectedTime" class="filter-input" @change="applyFilters">
+              <option value="">All Times</option>
+              <option v-for="time in timeOptions" :key="time" :value="time">{{ time }}</option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label>Filter by Food:</label>
+            <select v-model="filters.selectedFood" class="filter-input" @change="applyFilters">
+              <option value="">All Food Preferences</option>
+              <option v-for="food in foodOptions" :key="food" :value="food">{{ food }}</option>
+            </select>
+          </div>
+          
+          <button @click="resetFilters" class="secondary-button">Reset Filters</button>
+        </div>
+      </div>
       
       <div v-if="isLoading" class="loading">Loading...</div>
       <div v-else-if="error" class="error">{{ error }}</div>
       <div v-else>
-        <p v-if="signups.length === 0" class="no-users">No users signed up yet.</p>
+        <div class="filter-summary" v-if="filters.selectedDate || filters.selectedTime || filters.selectedFood">
+          <span>Showing results for: </span>
+          <span v-if="filters.selectedDate" class="filter-tag">
+            {{ formatDate(filters.selectedDate) }}
+            <span @click="filters.selectedDate = ''; applyFilters();" class="remove-filter">×</span>
+          </span>
+          <span v-if="filters.selectedTime" class="filter-tag">
+            {{ filters.selectedTime }}
+            <span @click="filters.selectedTime = ''; applyFilters();" class="remove-filter">×</span>
+          </span>
+          <span v-if="filters.selectedFood" class="filter-tag">
+            {{ filters.selectedFood }}
+            <span @click="filters.selectedFood = ''; applyFilters();" class="remove-filter">×</span>
+          </span>
+        </div>
+        
+        <p v-if="filteredSignups.length === 0" class="no-users">
+          {{ signups.length === 0 ? 'No users signed up yet.' : 'No users match the selected filters.' }}
+        </p>
         <div v-else class="users-grid">
-          <div v-for="(user, index) in signups" :key="index" class="user-card">
+          <div v-for="(user, index) in filteredSignups" :key="index" class="user-card">
             <div class="user-info">
               <div class="user-phone">{{ user.phone_number }}</div>
               <div class="user-handle">{{ user.instagram_handle }}</div>
-              <div v-if="user.availability" class="user-availability">
-                <strong>Available:</strong> {{ user.availability }}
+              <div v-if="user.selected_days && user.selected_days.length > 0" class="user-section">
+                <div class="section-title">Selected Days:</div>
+                <div class="selected-items">
+                  <span v-for="(day, index) in user.selected_days" :key="index" class="selected-item">
+                    {{ formatDate(day) }}
+                  </span>
+                </div>
               </div>
-              <div v-if="user.food_preferences" class="user-food-preferences">
-                <strong>Food Preferences:</strong> {{ user.food_preferences }}
+              <div v-if="user.selected_times && user.selected_times.length > 0" class="user-section">
+                <div class="section-title">Selected Times:</div>
+                <div class="selected-items">
+                  <span v-for="(time, index) in user.selected_times" :key="'time-'+index" class="selected-item">
+                    {{ time }}
+                  </span>
+                </div>
+              </div>
+              <div v-if="user.food_preferences && Array.isArray(user.food_preferences) && user.food_preferences.length > 0" class="user-section">
+                <div class="section-title">Food Preferences:</div>
+                <div class="selected-items">
+                  <span v-for="(food, index) in user.food_preferences" :key="'food-'+index" class="selected-item">
+                    {{ food }}
+                  </span>
+                </div>
+              </div>
+              <div v-else-if="user.food_preferences && typeof user.food_preferences === 'string'" class="user-section">
+                <div class="section-title">Food Preferences:</div>
+                <div class="selected-items">
+                  <span class="selected-item">
+                    {{ user.food_preferences }}
+                  </span>
+                </div>
               </div>
             </div>
             <div class="user-actions">
               <a :href="'sms:' + user.phone_number" class="action-btn sms-btn">
-                <i class="fas fa-comment"></i> Text
+                <i class="fas fa-comment"></i>
+                <span>Text</span>
               </a>
               <a :href="'https://instagram.com/' + user.instagram_handle.replace('@', '')"
                  target="_blank"
                  class="action-btn insta-btn">
-                <i class="fab fa-instagram"></i> IG
+                <i class="fab fa-instagram"></i>
+                <span>IG</span>
               </a>
             </div>
           </div>
@@ -65,15 +143,99 @@ export default {
       password: '',
       loginError: '',
       signups: [],
+      filteredSignups: [],
       isLoading: false,
-      error: null
+      error: null,
+      filters: {
+        selectedDate: '',
+        selectedTime: '',
+        selectedFood: ''
+      },
+      timeOptions: [
+        '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
+        '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM',
+        '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM'
+      ],
+      foodOptions: [
+        'Vegan', 'Vegetarian', 'Meat Lover', 'Pescatarian',
+        'Gluten-Free', 'Dairy-Free', 'Keto', 'Paleo'
+      ]
     };
   },
   created() {
     // No persistent authentication - user needs to log in each time
+    // Debug: Log the time options for verification
+    console.log('Available time options:', this.timeOptions);
   },
   methods: {
-    login() {
+    applyFilters() {
+      this.filteredSignups = this.signups.filter(user => {
+        // Filter by date
+        if (this.filters.selectedDate) {
+          const hasMatchingDay = user.selected_days?.some(day => {
+            return day === this.filters.selectedDate;
+          });
+          if (!hasMatchingDay) return false;
+        }
+        
+        // Filter by time
+        if (this.filters.selectedTime) {
+          // Convert both times to 24-hour format for comparison
+          const normalizeTime = (timeStr) => {
+            // Handle different time formats (e.g., '8:00 AM' or '08:00 AM')
+            const [time, period] = timeStr.split(' ');
+            let [hours, minutes] = time.split(':').map(Number);
+            
+            if (period === 'PM' && hours < 12) hours += 12;
+            if (period === 'AM' && hours === 12) hours = 0;
+            
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+          };
+          
+          const targetTime = normalizeTime(this.filters.selectedTime);
+          const hasMatchingTime = user.selected_times?.some(time => {
+            if (!time) return false;
+            try {
+              return normalizeTime(time) === targetTime;
+            } catch (e) {
+              console.warn('Error normalizing time:', time, e);
+              return false;
+            }
+          });
+          
+          console.log('Time check:', {
+            selectedTime: this.filters.selectedTime,
+            userTimes: user.selected_times,
+            normalizedTarget: targetTime,
+            hasMatchingTime
+          });
+          
+          if (!hasMatchingTime) return false;
+        }
+        
+        // Filter by food preference
+        if (this.filters.selectedFood) {
+          if (Array.isArray(user.food_preferences)) {
+            if (!user.food_preferences.includes(this.filters.selectedFood)) return false;
+          } else if (user.food_preferences !== this.filters.selectedFood) {
+            return false;
+          }
+        }
+        
+        return true;
+      });
+    },
+    
+    resetFilters() {
+      this.filters = {
+        selectedDate: '',
+        selectedTime: '',
+        selectedFood: ''
+      };
+      this.filteredSignups = [...this.signups];
+    },
+    
+    async login() {
       // Use the environment variable for the admin password
       if (this.password === import.meta.env.VITE_ADMIN_PASSWORD) {
         this.isAuthenticated = true;
@@ -104,6 +266,12 @@ export default {
         
         console.log('Fetched signups:', data);
         this.signups = data || [];
+        this.filteredSignups = [...this.signups];
+        
+        // Debug: Log the first user's selected times if available
+        if (this.signups.length > 0 && this.signups[0].selected_times) {
+          console.log('First user selected times:', this.signups[0].selected_times);
+        }
         
       } catch (err) {
         console.error('Error fetching signups:', err);
@@ -113,8 +281,19 @@ export default {
       }
     },
     formatDate(dateString) {
-      const options = { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' }
-      return new Date(dateString).toLocaleDateString(undefined, options)
+      if (!dateString) return '';
+      // Format as YYYY-MM-DD without time
+      if (typeof dateString === 'string' && dateString.includes('T')) {
+        return dateString.split('T')[0];
+      }
+      // If it's already in YYYY-MM-DD format, return as is
+      if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return dateString;
+      }
+      // Fallback to locale string if format is unexpected
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString; // Return original if invalid date
+      return date.toISOString().split('T')[0];
     }
   }
 }
@@ -130,8 +309,84 @@ export default {
 }
 
 .dashboard-content {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
+  padding: 0 15px;
+}
+
+.dashboard-header {
+  margin-bottom: 2rem;
+}
+
+.filters {
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-group label {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #4a5568;
+}
+
+.filter-input {
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.filter-summary {
+  margin: 1rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.filter-tag {
+  background-color: #e2e8f0;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.remove-filter {
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+}
+
+.remove-filter:hover {
+  color: #e53e3e;
+}
+
+.secondary-button {
+  background-color: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.secondary-button:hover {
+  background-color: #e2e8f0;
 }
 
 h2 {
@@ -193,30 +448,59 @@ h2 {
   margin-bottom: 0.5rem;
 }
 
-.user-availability {
-  color: #444;
-  font-size: 0.9rem;
+.user-section {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
   background-color: #f8f9fa;
-  padding: 0.5rem;
-  border-radius: 4px;
-  margin-top: 0.5rem;
-  word-break: break-word;
-}
-
-.user-availability strong,
-.user-food-preferences strong {
-  color: #333;
-}
-
-.user-food-preferences {
-  color: #444;
-  font-size: 0.9rem;
-  background-color: #f0f9ff;
-  padding: 0.5rem;
-  border-radius: 4px;
-  margin-top: 0.5rem;
-  word-break: break-word;
+  border-radius: 6px;
   border-left: 3px solid #0ea5e9;
+}
+
+.section-title {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #4a5568;
+}
+
+.selected-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.selected-item {
+  background-color: white;
+  padding: 0.35rem 0.65rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #2d3748;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Special styling for food preferences */
+.user-section:has(.section-title:contains('Food')) {
+  background-color: #f0f9ff;
+  border-left-color: #0ea5e9;
+}
+
+/* Special styling for days */
+.user-section:has(.section-title:contains('Days')) {
+  background-color: #f0fdf4;
+  border-left-color: #10b981;
+}
+
+/* Special styling for times */
+.user-section:has(.section-title:contains('Times')) {
+  background-color: #eff6ff;
+  border-left-color: #3b82f6;
 }
 
 .user-actions {
@@ -227,16 +511,21 @@ h2 {
 
 .action-btn {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+  display: block;
   padding: 0.5rem;
   border-radius: 6px;
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 500;
   transition: all 0.2s;
+  min-width: 80px;
+  box-sizing: border-box;
+  text-align: center;
+  position: relative;
+}
+
+.action-btn i {
+  margin-right: 5px;
 }
 
 .sms-btn {

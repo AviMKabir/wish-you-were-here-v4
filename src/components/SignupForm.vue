@@ -58,19 +58,21 @@
         </div>
       </div>
       
-      <!-- Step 4: Day Preference -->
-      <div v-else-if="currentStep === 4" key="day-preference" class="step-container">
-        <h2>When are you available?</h2>
-        <p class="subheader">Select your preferred days</p>
-        <div class="preference-buttons">
+      <!-- Step 4: Day Selection -->
+      <div v-else-if="currentStep === 4" key="day-selection" class="step-container">
+        <h2>Select Available Days</h2>
+        <p class="subheader">Choose all days that work for you (next 28 days)</p>
+        <div class="calendar-grid">
           <button 
-            v-for="option in dayOptions" 
-            :key="option.value"
-            @click="selectDay(option.value)"
-            :class="{'selected': selectedDay === option.value}"
-            class="preference-button"
+            v-for="day in dayOptions" 
+            :key="day.value"
+            @click="toggleDay(day.value)"
+            :class="{'selected': selectedDays.includes(day.value)}"
+            class="day-button"
           >
-            {{ option.label }}
+            <span class="day-name">{{ day.label.split(',')[0] }}</span>
+            <span class="day-date">{{ day.label.split(' ')[2] }}</span>
+            <span class="month">{{ day.label.split(' ')[1] }}</span>
           </button>
         </div>
         <div class="button-group">
@@ -79,26 +81,26 @@
             type="button" 
             @click="nextStep" 
             class="primary-button"
-            :disabled="!selectedDay"
+            :disabled="selectedDays.length === 0"
           >
             Continue
           </button>
         </div>
       </div>
 
-      <!-- Step 5: Time Preference -->
-      <div v-else-if="currentStep === 5" key="time-preference" class="step-container">
-        <h2>What time of day?</h2>
-        <p class="subheader">Select your preferred time</p>
-        <div class="preference-buttons">
+      <!-- Step 5: Time Selection -->
+      <div v-else-if="currentStep === 5" key="time-selection" class="step-container">
+        <h2>Select Available Times</h2>
+        <p class="subheader">Choose all time slots that work for you</p>
+        <div class="time-grid">
           <button 
-            v-for="option in timeOptions" 
-            :key="option.value"
-            @click="selectTime(option.value)"
-            :class="{'selected': selectedTime === option.value}"
-            class="preference-button"
+            v-for="time in timeOptions" 
+            :key="time.value"
+            @click="toggleTime(time.value)"
+            :class="{'selected': selectedTimes.includes(time.value)}"
+            class="time-button"
           >
-            {{ option.label }}
+            {{ time.label }}
           </button>
         </div>
         <div class="button-group">
@@ -107,7 +109,7 @@
             type="button" 
             @click="nextStep" 
             class="primary-button"
-            :disabled="!selectedTime"
+            :disabled="selectedTimes.length === 0"
           >
             Continue
           </button>
@@ -180,22 +182,58 @@ const phoneNumber = ref('');
 const instagramHandle = ref('');
 const selectedDay = ref('');
 const selectedTime = ref('');
+const selectedDays = ref([]);
+const selectedTimes = ref([]);
 const selectedFoods = ref([]);
 const currentStep = ref(1);
 const totalSteps = 7;
 
-const dayOptions = [
-  { value: 'weekdays', label: 'Weekdays' },
-  { value: 'weekends', label: 'Weekends' },
-  { value: 'anytime', label: 'Anytime' }
-];
+// Generate next 28 days
+const generateNext28Days = () => {
+  const days = [];
+  const today = new Date();
+  // Set to start of day to avoid timezone issues
+  today.setHours(0, 0, 0, 0);
+  
+  for (let i = 0; i < 28; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const dayNum = date.getDate();
+    
+    // Format date as YYYY-MM-DD without time
+    const formattedDate = date.toISOString().split('T')[0];
+    
+    days.push({
+      value: formattedDate, // YYYY-MM-DD format
+      label: `${dayName}, ${month} ${dayNum}`,
+      date: formattedDate
+    });
+  }
+  
+  return days;
+};
 
-const timeOptions = [
-  { value: 'anytime', label: 'Anytime' },
-  { value: 'morning', label: 'Morning' },
-  { value: 'afternoon', label: 'Afternoon' },
-  { value: 'night', label: 'Night' }
-];
+// Generate time slots from 8 AM to 10 PM
+const generateTimeSlots = () => {
+  const times = [];
+  for (let hour = 8; hour <= 22; hour++) {
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    const timeString = `${displayHour}:00 ${period}`;
+    
+    times.push({
+      value: `${hour.toString().padStart(2, '0')}:00`,
+      label: timeString
+    });
+  }
+  return times;
+};
+
+const dayOptions = generateNext28Days();
+const timeOptions = generateTimeSlots();
 
 const foodOptions = [
   { value: 'italian', label: 'Italian' },
@@ -302,123 +340,62 @@ const toggleFoodPreference = (food) => {
   }
 };
 
-const selectDay = (day) => {
-  selectedDay.value = day;
+const toggleDay = (day) => {
+  const index = selectedDays.value.indexOf(day);
+  if (index === -1) {
+    selectedDays.value.push(day);
+  } else {
+    selectedDays.value.splice(index, 1);
+  }
 };
 
-const selectTime = (time) => {
-  selectedTime.value = time;
+const toggleTime = (time) => {
+  const index = selectedTimes.value.indexOf(time);
+  if (index === -1) {
+    selectedTimes.value.push(time);
+  } else {
+    selectedTimes.value.splice(index, 1);
+  }
 };
 
 const submitForm = async () => {
-  console.log('Form submitted with values:', {
-    phoneNumber: phoneNumber.value,
-    instagramHandle: instagramHandle.value,
-    day: selectedDay.value,
-    time: selectedTime.value
-  });
-
-  if (!phoneNumber.value || !instagramHandle.value.trim()) {
-    console.log('Validation failed - missing fields');
-    message.value = 'Please fill in all fields';
-    isSuccess.value = false;
-    return;
-  }
-
-  // Remove all non-digit characters from the phone number
-  const rawPhoneNumber = phoneNumber.value.replace(/[^0-9]/g, '');
-  console.log('Raw phone number:', rawPhoneNumber);
-  
-  // Check if the phone number is at least 10 digits
-  if (rawPhoneNumber.length < 10) {
-    console.log('Validation failed - phone number too short');
-    message.value = 'Please enter a valid 10-digit phone number';
-    isSuccess.value = false;
-    return;
-  }
-
-  // Format the phone number with US country code by default
-  const formattedPhoneNumber = rawPhoneNumber.length === 10 
-    ? `+1${rawPhoneNumber}` 
-    : `+${rawPhoneNumber}`;
-  
-  console.log('Formatted phone number:', formattedPhoneNumber);
-
-  // Clean up Instagram handle (remove @ if included)
-  const cleanInstagramHandle = instagramHandle.value.replace(/^@/, '');
-  console.log('Cleaned Instagram handle:', cleanInstagramHandle);
-  
-  // Format availability text
-  let cleanAvailability;
-  if (selectedDay.value === 'anytime' && selectedTime.value === 'anytime') {
-    cleanAvailability = 'Anytime';
-  } else if (selectedDay.value === 'anytime') {
-    cleanAvailability = `Any day, ${selectedTime.value}`;
-  } else if (selectedTime.value === 'anytime') {
-    cleanAvailability = `${selectedDay.value}, any time`;
-  } else {
-    cleanAvailability = `${selectedDay.value}, ${selectedTime.value}`;
-  }
-  
-  // Format food preferences
-  const foodPreferences = selectedFoods.value.length > 0 
-    ? selectedFoods.value.join(', ')
-    : 'No preference';
-    
-  console.log('Availability:', cleanAvailability);
-  console.log('Food preferences:', foodPreferences);
-
   try {
+    // Format the data to send to Supabase
+    const formData = {
+      phone_number: phoneNumber.value.replace(/[^0-9]/g, ''), // Clean phone number
+      instagram_handle: instagramHandle.value.replace(/^@/, ''), // Remove @ if included
+      selected_days: selectedDays.value,
+      selected_times: selectedTimes.value,
+      food_preferences: selectedFoods.value,
+      created_at: new Date().toISOString()
+    };
+    
+    console.log('Submitting form data:', formData);
+    
+    // Insert data into Supabase
     const { data, error } = await supabase
       .from('signups')
-      .insert([
-        { 
-          phone_number: formattedPhoneNumber,
-          instagram_handle: cleanInstagramHandle ? `@${cleanInstagramHandle}` : null,
-          availability: cleanAvailability,
-          food_preferences: selectedFoods.value.join(', ')
-        },
-      ])
+      .insert([formData])
       .select();
-
+    
     if (error) {
-      console.error('Error inserting data:', error);
-      message.value = 'Error submitting form. Please try again.';
-      isSuccess.value = false;
+      console.error('Error saving to Supabase:', error);
+      alert('There was an error submitting your information. Please try again.');
       return;
     }
-
-    // Success! Move to the success step
-    console.log('Data inserted successfully:', data);
-    message.value = 'Thanks for signing up! We\'ll be in touch soon.';
-    isSuccess.value = true;
     
-    // Navigate to the success step
+    console.log('Successfully saved to Supabase:', data);
     nextStep();
-    isSubmitting.value = false;
     
   } catch (error) {
-    console.error('Error:', error);
-    message.value = 'An unexpected error occurred. Please try again.';
-    isSuccess.value = false;
+    console.error('Error in submitForm:', error);
+    alert('An unexpected error occurred. Please try again later.');
   }
 };
-
-defineOptions({
-  name: 'SignupForm',
-});
 </script>
   
-  <style scoped>
-  .signup-container {
-    max-width: 400px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem;
-    min-height: 70vh;
-    display: flex;
-    flex-direction: column;
-  }
-  
+<style>
+  /* Progress Indicator Styles */
   .progress-indicator {
     display: flex;
     justify-content: center;
@@ -432,6 +409,99 @@ defineOptions({
     border-radius: 50%;
     background-color: #e0e0e0;
     transition: all 0.3s ease;
+  }
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 5px;
+  }
+  
+  .time-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    margin-bottom: 24px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 5px;
+  }
+  
+  .day-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    font-weight: 500;
+    color: #333;
+  }
+  
+  .day-button:hover {
+    border-color: #888;
+  }
+  
+  .day-button.selected {
+    background-color: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
+  }
+  
+  .day-name {
+    font-size: 0.8em;
+    font-weight: 600;
+  }
+  
+  .day-date {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin: 2px 0;
+  }
+  
+  .month {
+    font-size: 0.7em;
+    opacity: 0.8;
+  }
+  
+  .time-button {
+    padding: 12px 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    font-weight: 500;
+    color: #333;
+  }
+  
+  .time-button:hover {
+    border-color: #888;
+  }
+  
+  .time-button.selected {
+    background-color: #2196F3;
+    color: white;
+    border-color: #2196F3;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .day-button.selected {
+    background-color: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
   
   .progress-step.active {
@@ -536,13 +606,14 @@ defineOptions({
   .share-buttons {
     display: flex;
     flex-direction: column;
-    gap: 1rem; /* Match form preference buttons gap */
-    margin: 1.5rem 0; /* Match form spacing */
+    gap: 1rem;
+    margin: 1.5rem 0;
+    width: 100%;
   }
 
   .share-button {
     width: 100%;
-    padding: 1rem; /* Match form button padding */
+    padding: 1rem;
     border-radius: 8px;
     font-size: 1rem;
     font-weight: 500;
@@ -553,6 +624,7 @@ defineOptions({
     display: flex;
     align-items: center;
     justify-content: center;
+    text-align: center;
   }
 
   .share-button.secondary-button {

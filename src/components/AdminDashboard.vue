@@ -30,6 +30,12 @@
             <div class="user-info">
               <div class="user-phone">{{ user.phone_number }}</div>
               <div class="user-handle">{{ user.instagram_handle }}</div>
+              <div v-if="user.availability" class="user-availability">
+                <strong>Available:</strong> {{ user.availability }}
+              </div>
+              <div v-if="user.food_preferences" class="user-food-preferences">
+                <strong>Food Preferences:</strong> {{ user.food_preferences }}
+              </div>
             </div>
             <div class="user-actions">
               <a :href="'sms:' + user.phone_number" class="action-btn sms-btn">
@@ -184,6 +190,33 @@ h2 {
 .user-handle {
   color: #666;
   font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.user-availability {
+  color: #444;
+  font-size: 0.9rem;
+  background-color: #f8f9fa;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  word-break: break-word;
+}
+
+.user-availability strong,
+.user-food-preferences strong {
+  color: #333;
+}
+
+.user-food-preferences {
+  color: #444;
+  font-size: 0.9rem;
+  background-color: #f0f9ff;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  word-break: break-word;
+  border-left: 3px solid #0ea5e9;
 }
 
 .user-actions {

@@ -47,29 +47,124 @@
             type="text"
             v-model="instagramHandle"
             placeholder="@yourhandle"
-            @keyup.enter="validateInstagram"
+            @keyup.enter="nextStep"
           />
         </div>
         <div class="button-group">
           <button type="button" @click="prevStep" class="secondary-button">Back</button>
-          <button type="button" @click="submitForm" class="primary-button">
-            {{ instagramHandle.trim() ? 'Submit' : 'Skip' }}
+          <button type="button" @click="nextStep" class="primary-button">
+            {{ instagramHandle.trim() ? 'Continue' : 'Skip' }}
           </button>
         </div>
       </div>
       
-      <!-- Step 4: Success -->
-      <div v-else-if="currentStep === 4" key="success" class="step-container success-container">
+      <!-- Step 4: Day Preference -->
+      <div v-else-if="currentStep === 4" key="day-preference" class="step-container">
+        <h2>When are you available?</h2>
+        <p class="subheader">Select your preferred days</p>
+        <div class="preference-buttons">
+          <button 
+            v-for="option in dayOptions" 
+            :key="option.value"
+            @click="selectDay(option.value)"
+            :class="{'selected': selectedDay === option.value}"
+            class="preference-button"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+        <div class="button-group">
+          <button type="button" @click="prevStep" class="secondary-button">Back</button>
+          <button 
+            type="button" 
+            @click="nextStep" 
+            class="primary-button"
+            :disabled="!selectedDay"
+          >
+            Continue
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 5: Time Preference -->
+      <div v-else-if="currentStep === 5" key="time-preference" class="step-container">
+        <h2>What time of day?</h2>
+        <p class="subheader">Select your preferred time</p>
+        <div class="preference-buttons">
+          <button 
+            v-for="option in timeOptions" 
+            :key="option.value"
+            @click="selectTime(option.value)"
+            :class="{'selected': selectedTime === option.value}"
+            class="preference-button"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+        <div class="button-group">
+          <button type="button" @click="prevStep" class="secondary-button">Back</button>
+          <button 
+            type="button" 
+            @click="nextStep" 
+            class="primary-button"
+            :disabled="!selectedTime"
+          >
+            Continue
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 6: Food Preference -->
+      <div v-else-if="currentStep === 6" key="food-preference" class="step-container">
+        <h2>What's your favorite type of food?</h2>
+        <p class="subheader">Choose one or more options</p>
+        <div class="preference-buttons">
+          <button 
+            v-for="option in foodOptions" 
+            :key="option.value"
+            @click="toggleFoodPreference(option.value)"
+            :class="{'selected': selectedFoods.includes(option.value)}"
+            class="preference-button"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+        <div class="button-group">
+          <button type="button" @click="prevStep" class="secondary-button">Back</button>
+          <button 
+            type="button" 
+            @click="submitForm" 
+            class="primary-button"
+            :disabled="selectedFoods.length === 0"
+          >
+            Submit
+          </button>
+        </div>
+      </div>
+      
+      <!-- Success Step -->
+      <div v-else-if="currentStep === totalSteps" key="success" class="step-container success-container">
         <div class="success-icon">✓</div>
         <h2>You're on the list! 🎉</h2>
         <p class="subheader">We'll text you at {{ phoneNumber }} as soon as we have an opening.</p>
         <p class="success-message">Thanks for joining our community!</p>
         <p class="subheader">Share with friends who might be interested!</p>
-        <button @click="resetForm" class="primary-button">Done</button>
+        <div class="share-buttons">
+          <button @click="shareLink" class="share-button primary-button">
+            <span v-if="!isCopied">Share Link</span>
+            <span v-else>Copied! ✓</span>
+          </button>
+          <a 
+            :href="`sms:?&body=Check out this cool spot! ${windowLocation}`" 
+            class="share-button secondary-button"
+          >
+            Text a Friend
+          </a>
+        </div>
       </div>
     </transition>
     
-    <div v-if="currentStep < 4" class="admin-link">
+    <div v-if="currentStep < 7" class="admin-link">
       <a href="#/admin" @click.prevent="router.push('/admin')">Admin</a>
     </div>
   </div>
@@ -83,10 +178,40 @@ import { supabase } from '../supabase';
 const router = useRouter();
 const phoneNumber = ref('');
 const instagramHandle = ref('');
+const selectedDay = ref('');
+const selectedTime = ref('');
+const selectedFoods = ref([]);
 const currentStep = ref(1);
-const totalSteps = 4;
+const totalSteps = 7;
+
+const dayOptions = [
+  { value: 'weekdays', label: 'Weekdays' },
+  { value: 'weekends', label: 'Weekends' },
+  { value: 'anytime', label: 'Anytime' }
+];
+
+const timeOptions = [
+  { value: 'anytime', label: 'Anytime' },
+  { value: 'morning', label: 'Morning' },
+  { value: 'afternoon', label: 'Afternoon' },
+  { value: 'night', label: 'Night' }
+];
+
+const foodOptions = [
+  { value: 'italian', label: 'Italian' },
+  { value: 'mexican', label: 'Mexican' },
+  { value: 'japanese', label: 'Japanese' },
+  { value: 'indian', label: 'Indian' },
+  { value: 'american', label: 'American' },
+  { value: 'thai', label: 'Thai' },
+  { value: 'dessert', label: 'Dessert' },
+  { value: 'anything', label: 'Anything!' }
+];
 const message = ref('');
 const isSuccess = ref(false);
+const isSubmitting = ref(false);
+const isCopied = ref(false);
+const windowLocation = typeof window !== 'undefined' ? window.location.href : '';
 
 const validatePhone = () => {
   // Remove all non-digit characters
@@ -129,13 +254,68 @@ const prevStep = () => {
 const resetForm = () => {
   phoneNumber.value = '';
   instagramHandle.value = '';
+  selectedDay.value = '';
+  selectedTime.value = '';
+  selectedFoods.value = [];
   currentStep.value = 1;
+};
+
+const shareLink = async () => {
+  try {
+    if (navigator.share) {
+      // Use Web Share API if available (mobile devices)
+      await navigator.share({
+        title: 'Check this out!',
+        text: 'Join me at this amazing place!',
+        url: windowLocation,
+      });
+    } else {
+      // Fallback for desktop
+      await navigator.clipboard.writeText(windowLocation);
+      isCopied.value = true;
+      setTimeout(() => {
+        isCopied.value = false;
+      }, 2000);
+    }
+  } catch (err) {
+    console.error('Error sharing:', err);
+    // Fallback to copy to clipboard if sharing fails
+    try {
+      await navigator.clipboard.writeText(windowLocation);
+      isCopied.value = true;
+      setTimeout(() => {
+        isCopied.value = false;
+      }, 2000);
+    } catch (e) {
+      console.error('Error copying to clipboard:', e);
+      alert('Could not copy link. Please copy it manually: ' + windowLocation);
+    }
+  }
+};
+
+const toggleFoodPreference = (food) => {
+  const index = selectedFoods.value.indexOf(food);
+  if (index === -1) {
+    selectedFoods.value.push(food);
+  } else {
+    selectedFoods.value.splice(index, 1);
+  }
+};
+
+const selectDay = (day) => {
+  selectedDay.value = day;
+};
+
+const selectTime = (time) => {
+  selectedTime.value = time;
 };
 
 const submitForm = async () => {
   console.log('Form submitted with values:', {
     phoneNumber: phoneNumber.value,
-    instagramHandle: instagramHandle.value
+    instagramHandle: instagramHandle.value,
+    day: selectedDay.value,
+    time: selectedTime.value
   });
 
   if (!phoneNumber.value || !instagramHandle.value.trim()) {
@@ -167,6 +347,26 @@ const submitForm = async () => {
   // Clean up Instagram handle (remove @ if included)
   const cleanInstagramHandle = instagramHandle.value.replace(/^@/, '');
   console.log('Cleaned Instagram handle:', cleanInstagramHandle);
+  
+  // Format availability text
+  let cleanAvailability;
+  if (selectedDay.value === 'anytime' && selectedTime.value === 'anytime') {
+    cleanAvailability = 'Anytime';
+  } else if (selectedDay.value === 'anytime') {
+    cleanAvailability = `Any day, ${selectedTime.value}`;
+  } else if (selectedTime.value === 'anytime') {
+    cleanAvailability = `${selectedDay.value}, any time`;
+  } else {
+    cleanAvailability = `${selectedDay.value}, ${selectedTime.value}`;
+  }
+  
+  // Format food preferences
+  const foodPreferences = selectedFoods.value.length > 0 
+    ? selectedFoods.value.join(', ')
+    : 'No preference';
+    
+  console.log('Availability:', cleanAvailability);
+  console.log('Food preferences:', foodPreferences);
 
   try {
     const { data, error } = await supabase
@@ -174,7 +374,9 @@ const submitForm = async () => {
       .insert([
         { 
           phone_number: formattedPhoneNumber,
-          instagram_handle: cleanInstagramHandle ? `@${cleanInstagramHandle}` : null
+          instagram_handle: cleanInstagramHandle ? `@${cleanInstagramHandle}` : null,
+          availability: cleanAvailability,
+          food_preferences: selectedFoods.value.join(', ')
         },
       ])
       .select();
@@ -191,8 +393,9 @@ const submitForm = async () => {
     message.value = 'Thanks for signing up! We\'ll be in touch soon.';
     isSuccess.value = true;
     
-    // Navigate to the success step instead of resetting
-    currentStep.value = 4;
+    // Navigate to the success step
+    nextStep();
+    isSubmitting.value = false;
     
   } catch (error) {
     console.error('Error:', error);
@@ -289,12 +492,79 @@ defineOptions({
     font-size: 0.8rem;
   }
 
+  .preference-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    margin: 1.5rem 0;
+    padding: 0.5rem 0;
+  }
+  
   .button-group {
     display: flex;
     gap: 1rem;
     margin-top: 1.5rem;
+    width: 100%;
+  }
+
+  .preference-button {
+    padding: 1.25rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    background: white;
+    color: #1f2937; /* Dark gray text for better contrast */
+    font-size: 1rem;
+    font-weight: 500; /* Slightly bolder text */
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    margin: 0.25rem 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
   
+  .preference-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .preference-button.selected {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+  }
+
+  .share-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* Match form preference buttons gap */
+    margin: 1.5rem 0; /* Match form spacing */
+  }
+
+  .share-button {
+    width: 100%;
+    padding: 1rem; /* Match form button padding */
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .share-button.secondary-button {
+    background-color: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+  }
+
+  .share-button.secondary-button:hover {
+    background-color: #e2e8f0;
+  }
+
   .primary-button {
     flex: 1;
     background-color: var(--primary-color);

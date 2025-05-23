@@ -1,87 +1,135 @@
 <template>
-    <div class="signup-container">
-      <h2>Wish you were here?</h2>
-      <p class="subheader">Sign up to get notified when we have an opening!</p>
-      <form @submit.prevent="submitForm">
+  <div class="signup-container">
+    <div class="progress-indicator">
+      <div 
+        v-for="step in totalSteps" 
+        :key="step"
+        class="progress-step"
+        :class="{ 'active': currentStep >= step, 'completed': currentStep > step }"
+      ></div>
+    </div>
+    
+    <transition name="fade" mode="out-in">
+      <!-- Step 1: Welcome -->
+      <div v-if="currentStep === 1" key="welcome" class="step-container">
+        <h2>Wish you were here?</h2>
+        <p class="subheader">Join our exclusive waitlist to be the first to know when we have an opening!</p>
+        <button @click="nextStep" class="primary-button">Get Started</button>
+      </div>
+      
+      <!-- Step 2: Phone Number -->
+      <div v-else-if="currentStep === 2" key="phone" class="step-container">
+        <h2>How can we reach you?</h2>
+        <p class="subheader">We'll text you when we have an opening</p>
         <div class="form-group">
-          <label for="phone">Phone Number:</label>
           <input
             type="tel"
-            id="phone"
             v-model="phoneNumber"
             class="phone-input"
             placeholder="(123) 456-7890"
             required
           />
-          <small>We'll text you!</small>
         </div>
-  
+        <div class="button-group">
+          <button type="button" @click="prevStep" class="secondary-button">Back</button>
+          <button type="button" @click="validatePhone" :disabled="!phoneNumber.trim()" class="primary-button">
+            Continue
+          </button>
+        </div>
+      </div>
+      
+      <!-- Step 3: Instagram Handle -->
+      <div v-else-if="currentStep === 3" key="instagram" class="step-container">
+        <h2>What's your Instagram?</h2>
+        <p class="subheader">So we can get to know you better (optional)</p>
         <div class="form-group">
-          <label for="instagramHandle">Instagram Handle:</label>
           <input
             type="text"
-            id="instagramHandle"
             v-model="instagramHandle"
-            required
-            placeholder="e.g., @foodvlogcompany"
+            placeholder="@yourhandle"
+            @keyup.enter="validateInstagram"
           />
-          <small>Start with '@' (optional but good practice).</small>
         </div>
-  
-        <button type="submit">Sign Up!</button>
-  
-        <p v-if="message" :class="{ 'success-message': isSuccess, 'error-message': !isSuccess }">
-          {{ message }}
-        </p>
-        
-        <div class="admin-link">
-          <a href="#/admin" @click.prevent="router.push('/admin')">Admin</a>
+        <div class="button-group">
+          <button type="button" @click="prevStep" class="secondary-button">Back</button>
+          <button type="button" @click="submitForm" class="primary-button">
+            {{ instagramHandle.trim() ? 'Submit' : 'Skip' }}
+          </button>
         </div>
-      </form>
+      </div>
+      
+      <!-- Step 4: Success -->
+      <div v-else-if="currentStep === 4" key="success" class="step-container success-container">
+        <div class="success-icon">✓</div>
+        <h2>You're on the list! 🎉</h2>
+        <p class="subheader">We'll text you at {{ phoneNumber }} as soon as we have an opening.</p>
+        <p class="success-message">Thanks for joining our community!</p>
+        <p class="subheader">Share with friends who might be interested!</p>
+        <button @click="resetForm" class="primary-button">Done</button>
+      </div>
+    </transition>
+    
+    <div v-if="currentStep < 4" class="admin-link">
+      <a href="#/admin" @click.prevent="router.push('/admin')">Admin</a>
     </div>
-  </template>
+  </div>
+</template>
   
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { supabase } from '../supabase';
-import { VueTelInput } from 'vue3-tel-input';
-import 'vue3-tel-input/dist/vue3-tel-input.css';
 
 const router = useRouter();
 const phoneNumber = ref('');
 const instagramHandle = ref('');
+const currentStep = ref(1);
+const totalSteps = 4;
 const message = ref('');
 const isSuccess = ref(false);
 
-const getCountryCode = (countryCode) => {
-  // Map of country codes to their respective country codes
-  const countryCodeMap = {
-    'US': '1',
-    'GB': '44',
-    'CA': '1',
-    'AU': '61',
-    'NZ': '64',
-    'IN': '91',
-  };
-  return countryCodeMap[countryCode] || '1'; // Default to US/Canada code if not found
+const validatePhone = () => {
+  // Remove all non-digit characters
+  const rawPhoneNumber = phoneNumber.value.replace(/\D/g, '');
+  
+  // Check if the phone number is at least 10 digits
+  if (rawPhoneNumber.length < 10) {
+    alert('Please enter a valid 10-digit phone number');
+    return;
+  }
+  
+  // Format the phone number with US country code by default if it's 10 digits
+  if (rawPhoneNumber.length === 10) {
+    phoneNumber.value = `(${rawPhoneNumber.slice(0,3)}) ${rawPhoneNumber.slice(3,6)}-${rawPhoneNumber.slice(6)}`;
+  }
+  
+  nextStep();
 };
 
-const onPhoneInput = (event) => {
-  // Basic phone number formatting
-  const input = event.target.value.replace(/\D/g, '');
-  const match = input.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-  
-  if (match) {
-    phoneNumber.value = !match[2] 
-      ? match[1] 
-      : `(${match[1]}) ${match[2]}${match[3] ? `-${match[3]}` : ''}`;
+const validateInstagram = () => {
+  // Remove @ if user included it
+  if (instagramHandle.value.startsWith('@')) {
+    instagramHandle.value = instagramHandle.value.slice(1);
+  }
+  nextStep();
+};
+
+const nextStep = () => {
+  if (currentStep.value < totalSteps) {
+    currentStep.value++;
+  }
+};
+
+const prevStep = () => {
+  if (currentStep.value > 1) {
+    currentStep.value--;
   }
 };
 
 const resetForm = () => {
   phoneNumber.value = '';
   instagramHandle.value = '';
+  currentStep.value = 1;
 };
 
 const submitForm = async () => {
@@ -138,13 +186,13 @@ const submitForm = async () => {
       return;
     }
 
-    // Success!
+    // Success! Move to the success step
     console.log('Data inserted successfully:', data);
     message.value = 'Thanks for signing up! We\'ll be in touch soon.';
     isSuccess.value = true;
     
-    // Reset form after successful submission
-    resetForm();
+    // Navigate to the success step instead of resetting
+    currentStep.value = 4;
     
   } catch (error) {
     console.error('Error:', error);
@@ -159,114 +207,189 @@ defineOptions({
 </script>
   
   <style scoped>
-  .phone-input {
+  .signup-container {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    min-height: 70vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .progress-indicator {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 2.5rem;
+  }
+  
+  .progress-step {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+    transition: all 0.3s ease;
+  }
+  
+  .progress-step.active {
+    background-color: var(--primary-color);
+    transform: scale(1.1);
+  }
+  
+  .progress-step.completed {
+    background-color: #4CAF50;
+  }
+  
+  .step-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+  
+  h2 {
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+  }
+  
+  .subheader {
+    color: #666;
+    margin-bottom: 2.5rem;
+    font-size: 1.1rem;
+    line-height: 1.5;
+  }
+  
+  .form-group {
+    margin-bottom: 2rem;
     width: 100%;
-    padding: 10px;
-    margin-bottom: 0; /* Removed margin to match Instagram input */
+  }
+  
+  .phone-input, input[type="text"] {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
     border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    font-size: 16px;
-    box-sizing: border-box;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    text-align: center;
+  }
+  
+  .phone-input:focus, input[type="text"]:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+    outline: none;
   }
   
   .form-group small {
     display: block;
-    margin-bottom: 1rem;
+    margin-top: 0.5rem;
     color: #666;
     font-size: 0.8rem;
   }
 
-  .vue-tel-input {
-    border-radius: 4px !important;
-    border: 1px solid #e0e0e0 !important;
-    transition: all 0.2s ease;
-    height: 40px;
-    background: white;
-    width: 100%;
-    box-sizing: border-box;
+  .button-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
   }
   
-  .vue-tel-input:focus-within {
-    border-color: var(--primary-color) !important;
-    box-shadow: 0 0 0 1px var(--primary-color);
+  .primary-button {
+    flex: 1;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
   }
-
-  /* Country dropdown */
-  .vue-tel-input .vti__dropdown {
-    padding: 0 8px;
-    border-right: 1px solid #e0e0e0;
+  
+  .primary-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  .primary-button:not(:disabled):hover {
+    background-color: #0069d9;
+    transform: translateY(-1px);
+  }
+  
+  .secondary-button {
+    flex: 1;
+    background-color: #f5f5f7;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .secondary-button:hover {
+    background-color: rgba(0, 122, 255, 0.05);
+  }
+  
+  .success-container {
+    text-align: center;
+    padding: 2rem 0;
+  }
+  
+  .success-icon {
+    width: 80px;
+    height: 80px;
+    background-color: #4CAF50;
+    color: white;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 60px;
+    font-size: 2.5rem;
+    margin: 0 auto 1.5rem;
+    animation: bounceIn 0.6s;
   }
-
-  .vue-tel-input .vti__dropdown:hover {
-    background-color: rgba(0, 0, 0, 0.02);
+  
+  .success-message {
+    color: #4CAF50;
+    font-weight: 600;
+    margin: 1rem 0 2rem;
   }
-
-  .vue-tel-input .vti__dropdown-list {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    z-index: 1000;
-    list-style: none;
-    padding: 8px 0;
-    margin: 0;
-    width: 100%;
-    max-height: 240px;
-    overflow-y: auto;
-    background: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  
+  .admin-link {
+    margin-top: 2rem;
+    text-align: center;
   }
-
-  .vue-tel-input .vti__dropdown-list.below {
-    top: 100%;
-    bottom: auto;
+  
+  .admin-link a {
+    color: #666;
+    text-decoration: none;
+    font-size: 0.9rem;
   }
-
-  .vue-tel-input .vti__dropdown-list.above {
-    top: auto;
-    bottom: 100%;
+  
+  .admin-link a:hover {
+    text-decoration: underline;
   }
-
-  .vue-tel-input .vti__dropdown-arrow {
-    margin-left: 4px;
-    transition: transform 0.2s ease;
+  
+  /* Animations */
+  .fade-enter-active, .fade-leave-active {
+    transition: opacity 0.3s ease, transform 0.3s ease;
   }
-
-  .vue-tel-input.vti--dropdown-open .vti__dropdown-arrow {
-    transform: rotate(180deg);
+  
+  .fade-enter-from, .fade-leave-to {
+    opacity: 0;
+    transform: translateX(10px);
   }
-
-  /* Country list items */
-  .vue-tel-input .vti__dropdown-list li {
-    padding: 8px 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .vue-tel-input .vti__dropdown-list li:hover {
-    background-color: rgba(0, 0, 0, 0.03);
-  }
-
-  .vue-tel-input .vti__dropdown-list li.highlighted {
-    background-color: rgba(0, 122, 255, 0.1);
-  }
-
-  /* Input field */
-  .vue-tel-input input {
-    border: none !important;
-    border-radius: 20px !important;
-    padding: 0 16px !important;
-    height: 100% !important;
-    font-size: 16px !important;
-    box-shadow: none !important;
-    outline: none !important;
+  
+  @keyframes bounceIn {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.1); opacity: 1; }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); }
   }
 
   .signup-container {

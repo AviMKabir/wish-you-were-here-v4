@@ -300,30 +300,38 @@ export default {
 </script>
 
 <style scoped>
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
+
 .admin-dashboard-container {
-  padding: 20px;
+  padding: 15px;
   max-width: 100%;
-  margin: 0;
+  margin: 0 auto;
   min-height: 100vh;
   background-color: #f8f9fa;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .dashboard-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 15px;
+  padding: 0 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .dashboard-header {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .filters {
   margin-top: 1.5rem;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 1rem;
   align-items: end;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .filter-group {
@@ -343,6 +351,7 @@ export default {
   border-radius: 6px;
   font-size: 0.9rem;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .filter-summary {
@@ -383,6 +392,7 @@ export default {
   cursor: pointer;
   font-size: 0.9rem;
   transition: all 0.2s;
+  box-sizing: border-box;
 }
 
 .secondary-button:hover {
@@ -418,7 +428,9 @@ h2 {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
-  padding: 0 10px;
+  padding: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .user-card {
@@ -429,12 +441,15 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .user-info {
   margin-bottom: 0.5rem;
+  width: 100%;
+  word-break: break-word;
 }
-
 .user-phone {
   font-weight: 600;
   font-size: 1.1rem;
@@ -628,19 +643,40 @@ h2 {
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .admin-dashboard-container {
-    padding: 15px;
+    padding: 10px;
+  }
+  
+  .dashboard-content {
+    padding: 0 5px;
+  }
+  
+  .filters {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .filter-group {
+    width: 100%;
   }
   
   .users-grid {
     grid-template-columns: 1fr;
+    padding: 0;
   }
   
   .user-card {
-    padding: 1rem;
+    padding: 0.75rem;
+    width: 100%;
+    margin: 0 auto;
   }
   
   .logout-button {
     max-width: 100%;
+    margin: 0 auto 1.5rem;
+  }
+  
+  .secondary-button {
+    width: 100%;
   }
 }
 </style>

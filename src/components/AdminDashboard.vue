@@ -13,7 +13,9 @@
             placeholder="Enter admin password"
           />
         </div>
-        <button type="submit" class="nav-button">Login</button>
+        <button type="submit" class="login-submit-button">
+          Login
+        </button>
         <p v-if="loginError" class="error">{{ loginError }}</p>
       </form>
     </div>
@@ -45,7 +47,7 @@
             <label>Filter by Food:</label>
             <select v-model="filters.selectedFood" class="filter-input" @change="applyFilters">
               <option value="">All Food Preferences</option>
-              <option v-for="food in foodOptions" :key="food" :value="food">{{ food }}</option>
+              <option v-for="food in foodOptions" :key="food.value" :value="food.value">{{ food.label }}</option>
             </select>
           </div>
           
@@ -157,8 +159,14 @@ export default {
         '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM'
       ],
       foodOptions: [
-        'Vegan', 'Vegetarian', 'Meat Lover', 'Pescatarian',
-        'Gluten-Free', 'Dairy-Free', 'Keto', 'Paleo'
+        { value: 'italian', label: 'Italian' },
+        { value: 'mexican', label: 'Mexican' },
+        { value: 'japanese', label: 'Japanese' },
+        { value: 'indian', label: 'Indian' },
+        { value: 'american', label: 'American' },
+        { value: 'thai', label: 'Thai' },
+        { value: 'dessert', label: 'Dessert' },
+        { value: 'anything', label: 'Anything!' }
       ]
     };
   },
@@ -300,6 +308,34 @@ export default {
 </script>
 
 <style scoped>
+.login-submit-button {
+  display: block !important;
+  background-color: var(--primary-color) !important;
+  color: white !important;
+  border: none !important;
+  padding: 0.8rem 2rem !important;
+  border-radius: 0 !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  font-family: 'Poppins', sans-serif !important;
+  margin: 0.5rem auto 0 !important;
+  width: 100% !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
+}
+
+.login-submit-button:hover,
+.login-submit-button:active,
+.login-submit-button:focus {
+  background-color: #0d3d16 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(15, 76, 28, 0.2) !important;
+  outline: none !important;
+}
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
 
 .admin-dashboard-container {
@@ -307,21 +343,26 @@ export default {
   max-width: 100%;
   margin: 0 auto;
   min-height: 100vh;
-  background-color: #f8f9fa;
-  box-sizing: border-box;
-  overflow-x: hidden;
-}
-
-.dashboard-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 10px;
-  width: 100%;
-  box-sizing: border-box;
+  padding: 2rem;
+  font-family: 'Poppins', sans-serif;
+  color: var(--text-color, #333);
+  background: #fff;
+  min-height: 100vh;
 }
 
 .dashboard-header {
-  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  background: var(--light-color);
+  padding: 1.5rem;
+  border-radius: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .filters {
@@ -342,107 +383,135 @@ export default {
 .filter-group label {
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
-  color: #4a5568;
+  font-weight: 500;
 }
 
-.filter-input {
-  padding: 0.5rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.9rem;
+.filter-group input,
+.filter-group select {
   width: 100%;
-  box-sizing: border-box;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 0;
+  font-size: 0.95rem;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.3s ease;
+  background-color: #fff;
 }
 
-.filter-summary {
-  margin: 1rem 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
+.filter-input:focus {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(15, 76, 28, 0.1);
 }
 
-.filter-tag {
-  background-color: #e2e8f0;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.85rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.remove-filter {
+.sec.logout-button {
+  padding: 0.5rem 1.5rem;
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+  border-radius: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 1.2rem;
-  line-height: 1;
-  padding: 0 0.25rem;
-}
-
-.remove-filter:hover {
-  color: #e53e3e;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'Poppins', sans-serif;
+  margin-left: auto;
 }
 
 .secondary-button {
-  background-color: #f1f5f9;
-  color: #334155;
-  border: 1px solid #e2e8f0;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-  box-sizing: border-box;
+  padding: 0.7rem 1.5rem;
+  background-color: #f0f0f0;
+  border: none;
+  border-radius: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--dark-color);
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'Poppins', sans-serif;
+  margin-top: auto;
 }
 
 .secondary-button:hover {
-  background-color: #e2e8f0;
+  background-color: #e0e0e0;
+  transform: translateY(-1px);
 }
 
-h2 {
-  color: #333;
-  margin: 0;
-  font-size: 1.5rem;
+.login-form input[type="submit"],
+.nav-button {
+  display: inline-block;
+  background-color: var(--primary-color) !important;
+  color: white !important;
+  border: none !important;
+  padding: 0.8rem 2rem !important;
+  border-radius: 0 !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  font-family: 'Poppins', sans-serif !important;
+  margin: 0.5rem auto 0 !important;
+  min-width: 100% !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
 }
 
-.logout-button {
-  display: block;
-  width: 100%;
-  max-width: 200px;
-  margin: 0 auto 2rem;
-  padding: 0.75rem;
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 25px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
+/* Force green hover state for all button variations */
+.nav-button:hover,
+.login-form input[type="submit"]:hover,
+.login-form input[type="submit"]:hover:active,
+.login-form input[type="submit"]:hover:focus,
+.nav-button:hover:active,
+.nav-button:hover:focus,
+button.nav-button:hover,
+input[type="submit"].nav-button:hover,
+button[type="submit"]:hover,
+.login-form button[type="submit"]:hover {
+  background-color: #0d3d16 !important;
+  background-image: none !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(15, 76, 28, 0.2) !important;
+  border-color: transparent !important;
+  outline: none !important;
 }
 
-.logout-button:hover {
-  background-color: #c82333;
-}
-
-.users-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
-  padding: 0;
-  width: 100%;
-  box-sizing: border-box;
+.nav-button:disabled,
+.login-form input[type="submit"]:disabled {
+  opacity: 0.7 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .user-card {
   background: white;
-  border-radius: 10px;
-  padding: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  box-sizing: border-box;
-  width: 100%;
+  border: 1px solid #e0e0e0;
+  border-radius: 0;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.user-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--primary-color);
 }
 
 .user-info {
@@ -450,35 +519,43 @@ h2 {
   width: 100%;
   word-break: break-word;
 }
+
 .user-phone {
   font-weight: 600;
-  font-size: 1.1rem;
-  margin-bottom: 0.25rem;
-  word-break: break-all;
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+  color: var(--dark-color);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-phone::before {
+  content: '📱';
+  font-size: 1rem;
 }
 
 .user-handle {
-  color: #666;
+  color: var(--text-light);
+  margin-bottom: 1rem;
   font-size: 0.95rem;
-  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.user-section {
-  margin-top: 0.75rem;
-  padding: 0.75rem;
-  background-color: #f8f9fa;
-  border-radius: 6px;
-  border-left: 3px solid #0ea5e9;
+.user-handle::before {
+  content: '📸';
+  font-size: 1rem;
 }
 
 .section-title {
   font-weight: 600;
-  color: #333;
+  color: var(--dark-color);
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #4a5568;
 }
 
 .selected-items {
@@ -489,156 +566,139 @@ h2 {
 }
 
 .selected-item {
-  background-color: white;
-  padding: 0.35rem 0.65rem;
-  border-radius: 4px;
+  display: inline-block;
+  background: var(--light-color);
+  padding: 0.35rem 0.8rem;
+  border-radius: 0;
+  margin: 0.2rem;
   font-size: 0.85rem;
-  color: #2d3748;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e2e8f0;
-  display: inline-flex;
-  align-items: center;
+  border: 1px solid #e0e0e0;
+  transition: all 0.2s ease;
 }
 
-/* Special styling for food preferences */
-.user-section:has(.section-title:contains('Food')) {
-  background-color: #f0f9ff;
-  border-left-color: #0ea5e9;
+.selected-item:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-1px);
 }
 
-/* Special styling for days */
-.user-section:has(.section-title:contains('Days')) {
-  background-color: #f0fdf4;
-  border-left-color: #10b981;
+.login-container {
+  max-width: 400px;
+  margin: 4rem auto;
+  padding: 2.5rem;
+  background: white;
+  border-radius: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  text-align: center;
 }
 
-/* Special styling for times */
-.user-section:has(.section-title:contains('Times')) {
-  background-color: #eff6ff;
-  border-left-color: #3b82f6;
+.login-container h2 {
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
 }
 
 .user-actions {
   display: flex;
   gap: 0.75rem;
-  margin-top: auto;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f0f0;
+  flex-wrap: wrap;
 }
 
 .action-btn {
   flex: 1;
-  display: block;
-  padding: 0.5rem;
-  border-radius: 6px;
-  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem;
   font-size: 0.9rem;
   font-weight: 500;
-  transition: all 0.2s;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
   min-width: 80px;
-  box-sizing: border-box;
-  text-align: center;
-  position: relative;
-}
-
-.action-btn i {
-  margin-right: 5px;
 }
 
 .sms-btn {
-  background-color: #28a745;
-  color: white;
-}
-
-.sms-btn:hover {
-  background-color: #218838;
+  background-color: #f0f0f0;
+  color: #333;
 }
 
 .insta-btn {
-  background-color: #e4405f;
-  color: white;
+  background-color: #f0f0f0;
+  color: #e1306c;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sms-btn:hover {
+  background-color: #e0e0e0;
 }
 
 .insta-btn:hover {
-  background-color: #c9304c;
+  background-color: #f8e1e8;
 }
 
-.loading, .no-users {
-  text-align: center;
-  padding: 2rem;
-  color: #666;
-  font-size: 1.1rem;
-}
-
-.error {
-  color: #dc3545;
-  padding: 1rem;
-  margin: 1rem 0;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
-  border-radius: 6px;
-  text-align: center;
-}
-
-/* Login form styles */
-.login-container {
-  max-width: 400px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+@media (max-width: 768px) {
+  .user-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .action-btn {
+    width: 100%;
+    padding: 0.75rem;
+  }
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.25rem;  /* Reduced from 0.5rem */
+  margin-top: 1.25rem;  /* Reduced from 1.5rem */
 }
 
 .login-form .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  text-align: left;
+  margin-bottom: 0.5rem;  /* Reduced from 1rem */
 }
 
 .login-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--dark-color);
   font-weight: 500;
-  color: #495057;
 }
 
 .login-form input[type="password"] {
-  padding: 0.75rem 1rem;
-  border: 1px solid #ced4da;
-  border-radius: 25px;
-  font-size: 1rem;
   width: 100%;
+  padding: 1rem 1.25rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 0;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.3s ease;
   box-sizing: border-box;
-  transition: border-color 0.2s;
+  background-color: #fff;
 }
 
 .login-form input[type="password"]:focus {
-  border-color: #80bdff;
+  border-color: var(--primary-color);
   outline: none;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.1);
+  background-color: #fff;
 }
 
-.nav-button {
-  background-color: #007AFF;
-  color: white;
-  border: none;
-  padding: 0.75rem;
-  border-radius: 25px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  text-decoration: none;
-  text-align: center;
-  transition: background-color 0.2s;
-  width: 100%;
-}
-
-.nav-button:hover {
-  background-color: #0069d9;
-}
+/* Nav button styles consolidated above with !important to ensure they take precedence */
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
@@ -671,8 +731,33 @@ h2 {
   }
   
   .logout-button {
-    max-width: 100%;
+    display: inline-block;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: 'Poppins', sans-serif;
     margin: 0 auto 1.5rem;
+    min-width: 180px;
+    text-align: center;
+    max-width: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  
+  .logout-button:hover {
+    background-color: #d32f2f;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.2);
   }
   
   .secondary-button {

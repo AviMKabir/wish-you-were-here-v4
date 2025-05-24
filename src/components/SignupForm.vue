@@ -19,7 +19,7 @@
       
       <!-- Step 2: Phone Number -->
       <div v-else-if="currentStep === 2" key="phone" class="step-container">
-        <h2 class="single-line">How can we reach you?</h2>
+        <h2>How can we reach you?</h2>
         <p class="subheader">We'll text you when we have an opening</p>
         <div class="form-group">
           <input
@@ -441,14 +441,8 @@ h1, h2, h3, h4, h5, h6 {
   text-transform: capitalize;
 }
 
-.title-case, .single-line {
-  white-space: nowrap;
-  font-size: 1.7rem;
-  line-height: 1.3;
-  margin: 0 auto;
-  text-align: center;
-  width: 100%;
-  padding: 0 0.5rem;
+.title-case {
+  text-transform: capitalize;
   box-sizing: border-box;
 }
 
@@ -529,7 +523,7 @@ h1, h2, h3, h4, h5, h6 {
     justify-content: center;
     border: 2px solid #e9ecef;
     background: white;
-    border-radius: 12px;
+    border-radius: 0;
     cursor: pointer;
     transition: all 0.2s ease;
     padding: 0.5rem 0.25rem;
@@ -540,7 +534,11 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   .day-button:hover {
-    border-color: #888;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.2);
   }
   
   .day-button.selected {
@@ -571,7 +569,7 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0.75rem 0.5rem;
     border: 2px solid #e9ecef;
     background: white;
-    border-radius: 8px;
+    border-radius: 0;
     cursor: pointer;
     transition: all 0.2s ease;
     font-family: 'Poppins', sans-serif;
@@ -580,7 +578,11 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   .time-button:hover {
-    border-color: #888;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.2);
   }
   
   .time-button.selected {
@@ -594,6 +596,7 @@ h1, h2, h3, h4, h5, h6 {
   .button-group {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 0.75rem;
     margin: 2rem 0 0;
     padding: 0;
@@ -603,9 +606,20 @@ h1, h2, h3, h4, h5, h6 {
     margin-right: auto;
   }
   
+  .button-group .secondary-button,
+  .button-group .primary-button {
+    width: 100%;
+    height: 48px; /* Fixed height for both buttons */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    line-height: 1;
+  }
+  
   .button-group .secondary-button {
     order: 2;
-    margin-top: 0.5rem;
+    margin-top: 0;
   }
   
   .button-group .primary-button {
@@ -615,11 +629,11 @@ h1, h2, h3, h4, h5, h6 {
   .preference-button {
     padding: 1.25rem 1rem;
     border: 2px solid #e2e8f0;
-    border-radius: 10px;
+    border-radius: 0;
     background: white;
-    color: #1f2937; /* Dark gray text for better contrast */
+    color: #1f2937;
     font-size: 1rem;
-    font-weight: 500; /* Slightly bolder text */
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: center;
@@ -628,8 +642,11 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   .preference-button:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
     transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(46, 125, 50, 0.2);
   }
   
   .preference-button.selected {
@@ -680,7 +697,7 @@ h1, h2, h3, h4, h5, h6 {
     color: white;
     border: none;
     padding: 0.8rem 2rem;
-    border-radius: 50px;
+    border-radius: 0;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -699,8 +716,9 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   .primary-button:not(:disabled):hover {
-    background-color: #0069d9;
+    background-color: #0d3d16;
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(15, 76, 28, 0.2);
   }
   
   .secondary-button {
@@ -708,10 +726,10 @@ h1, h2, h3, h4, h5, h6 {
     background-color: transparent;
     color: var(--primary-color);
     border: 2px solid var(--primary-color);
-    padding: 1rem 2rem;
-    border-radius: 50px;
-    font-size: 1.1rem;
-    font-weight: 500;
+    padding: 0.8rem 2rem;
+    border-radius: 0;
+    font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     text-transform: uppercase;
@@ -782,15 +800,17 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   .instagram-link {
-    color: #8a3ab9;
+    color: var(--primary-color);
     text-decoration: none;
-    font-weight: 500;
-    transition: color 0.2s;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid transparent;
   }
   
   .instagram-link:hover {
-    color: #6a2c8c;
-    text-decoration: underline;
+    color: #0d3d16;
+    text-decoration: none;
+    border-bottom-color: var(--primary-color);
   }
   
   .social-follow {
@@ -907,12 +927,13 @@ h1, h2, h3, h4, h5, h6 {
   input[type="text"] {
     width: 100%;
     padding: 1rem 1.25rem;
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 0;
     font-size: 1rem;
     font-family: 'Poppins', sans-serif;
     transition: all 0.3s ease;
-    background-color: #f8f9fa;
+    box-sizing: border-box;
+    background-color: #fff;
   }
   
   input[type="tel"]:focus,

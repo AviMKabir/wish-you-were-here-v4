@@ -85,17 +85,29 @@
               <div v-if="user.selected_days && user.selected_days.length > 0" class="user-section">
                 <div class="section-title">Selected Days:</div>
                 <div class="selected-items">
-                  <span v-for="(day, index) in user.selected_days" :key="index" class="selected-item">
+                  <div v-for="(day, index) in user.selected_days" :key="index" class="selected-item">
                     {{ formatDate(day) }}
-                  </span>
+                  </div>
                 </div>
               </div>
-              <div v-if="user.selected_times && user.selected_times.length > 0" class="user-section">
+              <div v-if="user.selected_times" class="user-section">
                 <div class="section-title">Selected Times:</div>
                 <div class="selected-items">
-                  <span v-for="(time, index) in user.selected_times" :key="'time-'+index" class="selected-item">
-                    {{ time }}
-                  </span>
+                  <template v-if="Array.isArray(user.selected_times)">
+                    <div v-for="(item, idx) in parseTimeSlots(user.selected_times)" :key="idx" class="time-slot">
+                      <div class="time-date">
+                        {{ formatDate(item.date) }}
+                      </div>
+                      <div class="time-slots">
+                        <span v-for="(time, timeIdx) in item.times" :key="timeIdx" class="selected-item">
+                          {{ formatTime(time) }}
+                        </span>
+                      </div>
+                    </div>
+                  </template>
+                  <div v-else class="time-slot">
+                    {{ user.selected_times }}
+                  </div>
                 </div>
               </div>
               <div v-if="user.food_preferences && Array.isArray(user.food_preferences) && user.food_preferences.length > 0" class="user-section">
@@ -176,6 +188,55 @@ export default {
     console.log('Available time options:', this.timeOptions);
   },
   methods: {
+    parseTimeSlots(timeSlots) {
+      try {
+        // If it's an array of stringified JSON objects
+        if (Array.isArray(timeSlots)) {
+          return timeSlots.map(item => {
+            try {
+              // If the item is a string that looks like JSON, parse it
+              if (typeof item === 'string' && (item.startsWith('{') || item.startsWith('['))) {
+                return JSON.parse(item);
+              }
+              return item;
+            } catch (e) {
+              console.error('Error parsing time slot:', e, item);
+              return { date: 'Invalid date', times: [String(item)] };
+            }
+          });
+        }
+        
+        // If it's a single stringified JSON object
+        if (typeof timeSlots === 'string') {
+          try {
+            return [JSON.parse(timeSlots)];
+          } catch (e) {
+            return [{ date: 'Invalid date', times: [timeSlots] }];
+          }
+        }
+        
+        // If it's already an object, return it in an array
+        if (timeSlots && typeof timeSlots === 'object') {
+          return [timeSlots];
+        }
+        
+        return [];
+      } catch (e) {
+        console.error('Error in parseTimeSlots:', e, timeSlots);
+        return [];
+      }
+    },
+    formatTime(timeStr) {
+      // Convert 24h to 12h format
+      if (!timeStr) return '';
+      
+      const [hours, minutes] = timeStr.split(':');
+      const hour = parseInt(hours, 10);
+      const period = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour % 12 || 12; // Convert 0 to 12 for 12 AM
+      
+      return `${displayHour}:${minutes} ${period}`;
+    },
     applyFilters() {
       this.filteredSignups = this.signups.filter(user => {
         // Filter by date
@@ -560,14 +621,38 @@ button[type="submit"]:hover,
 
 .selected-items {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.time-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.time-date {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.time-slots {
+  display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
+  gap: 4px;
 }
 
 .selected-item {
-  display: inline-block;
-  background: var(--light-color);
+  background: #e9ecef;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.9em;
+  white-space: nowrap;
   padding: 0.35rem 0.8rem;
   border-radius: 0;
   margin: 0.2rem;

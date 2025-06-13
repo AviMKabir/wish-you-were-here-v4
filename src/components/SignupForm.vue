@@ -62,17 +62,31 @@
       <div v-else-if="currentStep === 4" key="day-selection" class="step-container">
         <h2>Select Available Days</h2>
         <p class="subheader">Choose all days that work for you (next 28 days)</p>
+        <div class="day-headers">
+          <span v-for="day in ['S', 'M', 'T', 'W', 'T', 'F', 'S']" :key="day" class="day-header">
+            {{ day }}
+          </span>
+        </div>
         <div class="calendar-grid">
           <button 
             v-for="day in dayOptions" 
-            :key="day.value"
-            @click="toggleDay(day.value)"
-            :class="{'selected': selectedDays.includes(day.value)}"
-            class="day-button"
+            :key="day.value || `empty-${$index}`"
+            @click="!day.isEmpty && toggleDay(day.value)"
+            :class="[
+              'day-button', 
+              { 
+                'selected': selectedDays.includes(day.value),
+                'empty': day.isEmpty
+              }
+            ]"
+            :disabled="day.isEmpty"
           >
-            <span class="day-name">{{ day.label.split(',')[0] }}</span>
-            <span class="day-date">{{ day.label.split(' ')[2] }}</span>
-            <span class="month">{{ day.label.split(' ')[1] }}</span>
+            <template v-if="!day.isEmpty">
+              <span class="day-name">{{ day.label.split(',')[0] }}</span>
+              <span class="day-date">{{ day.label.split(' ')[2] }}</span>
+              <span class="month">{{ day.label.split(' ')[1] }}</span>
+            </template>
+            <span v-else>&nbsp;</span>
           </button>
         </div>
         <div class="button-group">
@@ -88,28 +102,35 @@
         </div>
       </div>
 
-      <!-- Step 5: Time Selection -->
-      <div v-else-if="currentStep === 5" key="time-selection" class="step-container">
+      <!-- Step 5: Time Selection by Day -->
+      <div v-else-if="currentStep === 5" key="time-selection-by-day" class="step-container">
         <h2>Select Available Times</h2>
-        <p class="subheader">Choose all time slots that work for you</p>
-        <div class="time-grid">
-          <button 
-            v-for="time in timeOptions" 
-            :key="time.value"
-            @click="toggleTime(time.value)"
-            :class="{'selected': selectedTimes.includes(time.value)}"
-            class="time-button"
-          >
-            {{ time.label }}
-          </button>
+        <p class="subheader">Choose available times for each selected day</p>
+        
+        <div class="day-time-container">
+          <div v-for="day in selectedDays" :key="day" class="day-time-group">
+            <h3 class="day-time-header">{{ formatDayForDisplay(day) }}</h3>
+            <div class="time-grid">
+              <button 
+                v-for="time in timeOptions" 
+                :key="time.value"
+                @click="toggleTime(day, time.value)"
+                :class="{'selected': selectedTimesByDay[day] && selectedTimesByDay[day].includes(time.value)}"
+                class="time-button"
+              >
+                {{ time.label }}
+              </button>
+            </div>
+          </div>
         </div>
+        
         <div class="button-group">
           <button type="button" @click="prevStep" class="secondary-button">Back</button>
           <button 
             type="button" 
             @click="nextStep" 
             class="primary-button"
-            :disabled="selectedTimes.length === 0"
+            :disabled="!hasSelectedTimes"
           >
             Continue
           </button>
@@ -145,7 +166,7 @@
       </div>
       
       <!-- Success Step -->
-      <div v-else-if="currentStep === totalSteps" key="success" class="step-container success-container">
+      <div v-else-if="isSuccess" key="success" class="step-container success-container">
         <div class="success-icon">✓</div>
         <h2 class="single-line">You're on the list! 🎉</h2>
         <p class="subheader">We'll text you at {{ phoneNumber }} as soon as we have an opening.</p>
@@ -190,18 +211,32 @@ const instagramHandle = ref('');
 const selectedDay = ref('');
 const selectedTime = ref('');
 const selectedDays = ref([]);
-const selectedTimes = ref([]);
+const selectedTimesByDay = ref({});
 const selectedFoods = ref([]);
 const currentStep = ref(1);
-const totalSteps = 7;
+const totalSteps = 7; // Total number of steps in the form
 
-// Generate next 28 days
+// Generate next 28 days with proper weekday alignment
 const generateNext28Days = () => {
   const days = [];
   const today = new Date();
   // Set to start of day to avoid timezone issues
   today.setHours(0, 0, 0, 0);
   
+  // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+  const firstDayOfWeek = today.getDay();
+  
+  // Add empty placeholders for days before today in the week
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    days.push({
+      value: '',
+      label: '',
+      date: '',
+      isEmpty: true
+    });
+  }
+  
+  // Add the next 28 days
   for (let i = 0; i < 28; i++) {
     const date = new Date(today);
     date.setDate(today.getDate() + i);
@@ -210,13 +245,18 @@ const generateNext28Days = () => {
     const month = date.toLocaleDateString('en-US', { month: 'short' });
     const dayNum = date.getDate();
     
-    // Format date as YYYY-MM-DD without time
-    const formattedDate = date.toISOString().split('T')[0];
+    // Format date as YYYY-MM-DD without timezone issues
+    const year = date.getFullYear();
+    const monthNum = String(date.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(date.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${monthNum}-${dayStr}`;
     
     days.push({
-      value: formattedDate, // YYYY-MM-DD format
+      value: formattedDate, // YYYY-MM-DD format (local time)
       label: `${dayName}, ${month} ${dayNum}`,
-      date: formattedDate
+      date: formattedDate,
+      dayName: dayName,
+      isEmpty: false
     });
   }
   
@@ -285,6 +325,11 @@ const validateInstagram = () => {
 };
 
 const nextStep = () => {
+  // Validate before moving to time selection
+  if (currentStep.value === 4 && selectedDays.value.length === 0) {
+    return; // Don't proceed if no days selected
+  }
+  
   if (currentStep.value < totalSteps) {
     currentStep.value++;
   }
@@ -351,28 +396,63 @@ const toggleDay = (day) => {
   const index = selectedDays.value.indexOf(day);
   if (index === -1) {
     selectedDays.value.push(day);
+    // Initialize empty array for this day's times if it doesn't exist
+    if (!selectedTimesByDay.value[day]) {
+      selectedTimesByDay.value[day] = [];
+    }
   } else {
     selectedDays.value.splice(index, 1);
+    // Remove day from selectedTimesByDay if it exists
+    if (selectedTimesByDay.value[day]) {
+      delete selectedTimesByDay.value[day];
+    }
   }
 };
 
-const toggleTime = (time) => {
-  const index = selectedTimes.value.indexOf(time);
+const toggleTime = (day, time) => {
+  if (!selectedTimesByDay.value[day]) {
+    selectedTimesByDay.value[day] = [];
+  }
+  
+  const index = selectedTimesByDay.value[day].indexOf(time);
   if (index === -1) {
-    selectedTimes.value.push(time);
+    selectedTimesByDay.value[day].push(time);
   } else {
-    selectedTimes.value.splice(index, 1);
+    selectedTimesByDay.value[day].splice(index, 1);
   }
 };
+
+const formatDayForDisplay = (dateString) => {
+  // Parse the YYYY-MM-DD string into local date components
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.toLocaleDateString('en-US', { 
+    weekday: 'short', 
+    month: 'short', 
+    day: 'numeric' 
+  });
+};
+
+const hasSelectedTimes = computed(() => {
+  return Object.values(selectedTimesByDay.value).some(times => times.length > 0);
+});
 
 const submitForm = async () => {
   try {
+    // Convert selectedTimesByDay to an array of objects for database storage
+    const timesArray = selectedDays.value
+      .filter(date => selectedTimesByDay.value[date]?.length > 0) // Only include days with selected times
+      .map(date => ({
+        date,
+        times: selectedTimesByDay.value[date] || []
+      }));
+    
     // Format the data to send to Supabase
     const formData = {
       phone_number: phoneNumber.value.replace(/[^0-9]/g, ''), // Clean phone number
       instagram_handle: instagramHandle.value.replace(/^@/, ''), // Remove @ if included
       selected_days: selectedDays.value,
-      selected_times: selectedTimes.value,
+      selected_times: timesArray, // This will be stored as JSONB
       food_preferences: selectedFoods.value,
       created_at: new Date().toISOString()
     };
@@ -392,11 +472,12 @@ const submitForm = async () => {
     }
     
     console.log('Successfully saved to Supabase:', data);
-    nextStep();
+    isSuccess.value = true;
+    currentStep.value++;
     
   } catch (error) {
     console.error('Error in submitForm:', error);
-    alert('An unexpected error occurred. Please try again later.');
+    alert('An error occurred while saving your information. Please try again.');
   }
 };
 </script>
@@ -497,14 +578,24 @@ h1, h2, h3, h4, h5, h6 {
     color: white;
     font-size: 12px;
   }
+  .day-headers {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    margin-bottom: 10px;
+    text-align: center;
+    font-weight: bold;
+  }
+
+  .day-header {
+    padding: 8px 0;
+  }
+
   .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
-    margin: 0 0 2rem;
-    padding: 0 0.25rem;
-    width: 100%;
-    box-sizing: border-box;
+    gap: 10px;
+    margin-bottom: 20px;
   }
   
   .time-grid {
